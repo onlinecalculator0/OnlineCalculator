@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🌈 Colorful Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* -------------------------------------------------
+   Global styles – make the page fill the viewport
+   ------------------------------------------------- */
+html, body {
+    height: 100%;
+    margin:0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* -------------------------------------------------
+   Calculator container
+
+
+   ------------------------------------------------- */
+.calculator {
+    background: #7637c4ed;          /* semi‑transparent white */
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    width: 320px;
+    max-width: 95vw;
+    padding: 20px;
+}
+
+/* -------------------------------------------------
+   Display (the "screen")
+
+
+   ------------------------------------------------- */
+.display {
+    background: #2c3e50;
+    color: #ecf0f1;
+    font-size: 2rem;
+    text-align: top;
+    border-radius: 12px;
+    padding: 20px 16px;
+    margin-bottom: 40px;
+    overflow-y: scroll;
+    
+}
+
+/* -------------------------------------------------
+   Buttons grid
+   ------------------------------------------------- */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+/* -------------------------------------------------
+   Individual button styling – each gets a different hue
+   ------------------------------------------------- */
+button {
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform .07s, box-shadow .07s;
+}
+
+/* Colors for each type of button */
+button[data-type="number"]   { background: #ff6b6b; color:#fff; }
+button[data-type="operator"] { background: #4ecdc4; color:#fff; }
+button[data-type="clear"]    { background: #ffc002; color:#fff; }
+button[data-type="equals"]   { background: #c59014; color:#fff; }
+button[data-type="decimal"]  { background: #f686e7; color:#fff; }
+
+/* Hover / active effect */
+button:hover {
+    filter: brightness(1.1);
+}
+button:active {
+    transform: scale(0.96);
+}
+
+/* Make the “0” button span two columns on small screens */
+button[data-wider] {
+    grid-column: span 2;
+}
+
+/* -------------------------------------------------
+   Responsive tweaks (optional)
+   ------------------------------------------------- */
+@media (max-width: 360px) {
+    .display { font-size: 1.6rem; }
+    button    { font-size: 1.2rem; padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="calculator">
+    <div class="display" id="display">0</div>
+
+    <div class="buttons">
+        <!-- Row 1 -->
+        <button data-type="clear"   onclick="clearDisplay()">C</button>
+        <button data-type="operator" onclick="appendOperator('/')">÷</button>
+        <button data-type="operator" onclick="appendOperator('*')">×</button>
+        <button data-type="operator" onclick="appendOperator('-')">−</button>
+
+        <!-- Row 2 -->
+        <button data-type="number"   onclick="appendNumber('7')">7</button>
+        <button data-type="number"   onclick="appendNumber('8')">8</button>
+        <button data-type="number"   onclick="appendNumber('9')">9</button>
+        <button data-type="operator" onclick="appendOperator('+')">+</button>
+
+        <!-- Row 3 -->
+        <button data-type="number"   onclick="appendNumber('4')">4</button>
+        <button data-type="number"   onclick="appendNumber('5')">5</button>
+        <button data-type="number"   onclick="appendNumber('6')">6</button>
+        <button data-type="equals"   onclick="calculate()">=</button>
+
+        <!-- Row 4 -->
+        <button data-type="number"   onclick="appendNumber('1')">1</button>
+        <button data-type="number"   onclick="appendNumber('2')">2</button>
+        <button data-type="number"   onclick="appendNumber('3')">3</button>
+        <button data-type="decimal"  onclick="appendDecimal()">.</button>
+
+        <!-- Row 5 (0 spans two columns) -->
+        <button  data-type="number"  onclick="appendNumber('0')">0</button>
+        <button  data-type="number" data-wider onclick="appendNumber('0000')">0000</button>
+        <button data-type="operator" onclick="toggleSign()">±</button>
+        
+    </div>
+</div>
+
+<script>
+/* -------------------------------------------------
+   Calculator logic – kept deliberately simple
+   ------------------------------------------------- */
+
+const displayEl = document.getElementById('display');
+let expression = '';   // holds the full expression (e.g., "12+7*3")
+
+function updateDisplay(value) {
+    displayEl.textContent = value;
+}
+
+/* ---------- Input helpers ----------------------------------- */
+function appendNumber(num) {
+    // If the display currently shows a result, start a new expression
+    if (expression === '' && displayEl.textContent !== '0' && /[0-9]$/.test(displayEl.textContent)) {
+        expression = displayEl.textContent;
+    }
+    expression += num;
+    updateDisplay(expression);
+}
+
+function appendOperator(op) {
+    // Prevent consecutive operators (except for the minus sign which can start a negative number)
+    if (/[+\-*/]$/.test(expression) && op !== '-') {
+        // replace the previous operator
+        expression = expression.slice(0, -1) + op;
+    } else {
+        expression += op;
+    }
+    updateDisplay(expression);
+}
+
+function appendDecimal() {
+    // Add a decimal only if the current number doesn't already contain one
+    const parts = expression.split(/[+\-*/]/);
+    const current = parts[parts.length - 1];
+    if (!current.includes('.')) {
+        expression += '.';
+        updateDisplay(expression);
+    }
+}
+
+/* ---------- Special actions --------------------------------- */
+function clearDisplay() {
+    expression = '';
+    updateDisplay('0');
+}
+
+function toggleSign() {
+    // Find the last number in the expression and toggle its sign
+    const match = expression.match(/([+\-*/])?(\d*\.?\d+)$/);
+    if (!match) return;
+    const operator = match[1] || '';
+    const number   = match[2];
+    const signed   = (operator === '-') ? '' : '-';
+    // Replace the last number (and possibly preceding '-') with the signed version
+    expression = expression.slice(0, expression.length - match[0].length) + signed + number;
+    updateDisplay(expression);
+}
+
+/* ---------- Evaluation --------------------------------------- */
+function calculate() {
+    // Replace the multiplication and division symbols used in the UI with JS equivalents
+    const cleanExpr = expression
+        .replace(/÷/g, '/')
+        .replace(/×/g, '*')
+        .replace(/−/g, '-');
+
+    try {
+        // Use Function constructor for a safe evaluation (no eval)
+        const result = Function('"use strict";return (' + cleanExpr + ')')();
+        updateDisplay(result);
+        expression = String(result);   // allow chaining (e.g., 5 + = → 10)
+    } catch (e) {
+        updateDisplay('Error');
+        expression = '';
+    }
+}
+
+/* -------------------------------------------------
+   Keyboard support – optional but handy
+   ------------------------------------------------- */
+document.addEventListener('keydown', e => {
+    const key = e.key;
+    if (/[0-9]/.test(key)) {
+        appendNumber(key);
+    } else if (key === '+' || key === '-') {
+        appendOperator(key);
+    } else if (key === '*') {
+        appendOperator('*');
+    } else if (key === '/' ) {
+        appendOperator('/');
+    } else if (key === '.' ) {
+        appendDecimal();
+    } else if (key === 'Enter' || key === '=') {
+        e.preventDefault(); // stop form submit
+        calculate();
+    } else if (key === 'Backspace') {
+        // simple backspace: remove last character
+        expression = expression.slice(0, -1);
+        updateDisplay(expression || '0');
+    } else if (key.toLowerCase() === 'c') {
+        clearDisplay();
+    }
+});
+</script>
+</body>
+</html>
